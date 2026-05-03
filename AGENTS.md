@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## 在写任何代码之前必须做：
 
 1. **优先查阅本地文档**: `node_modules/next/dist/docs/` 目录下有当前版本的完整文档，必须先读
-2. **兜底查询**: 如果本地文档中没有找到答案，或者不确定 API 用法，使用 `npx ctx7@latest docs /vercel/next.js/v16.2.4 "<问题>"` 查询官方文档
+2. **兜底查询**: 如果本地文档中没有找到答案，或者不确定 API 用法，使用 `load skill find-docs` 来查询官方文档
 3. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
