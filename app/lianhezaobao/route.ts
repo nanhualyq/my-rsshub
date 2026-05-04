@@ -27,6 +27,7 @@ async function fetchArticles(): Promise<Article[]> {
   const arg = extractEnqueueArg(scriptContent)
   if (!arg) return []
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any[] = JSON.parse(arg)
 
   const articlesIdx = data.indexOf('articles')
@@ -41,6 +42,7 @@ async function fetchArticles(): Promise<Article[]> {
     const refMap = data[refMapIdx]
     if (typeof refMap !== 'object' || refMap === null) continue
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const article: Record<string, any> = {}
 
     for (const [keyRef, valIdx] of Object.entries(refMap)) {
