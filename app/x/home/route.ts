@@ -1,5 +1,7 @@
 import { escapeXml, buildRssXml, rssDate, type RssItem } from '@/lib/rss'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export const dynamic = 'force-dynamic'
 
 const API_URL =
@@ -74,7 +76,7 @@ function getUserResult(result: any): any | null {
   return result.core?.user_results?.result ?? null
 }
 
-function buildDescription(result: any): string {
+function renderTweetContent(result: any): string {
   const user = getUserResult(result)
   const text = getTweetText(result)
 
@@ -124,6 +126,21 @@ function buildDescription(result: any): string {
   return html
 }
 
+function buildDescription(result: any): string {
+  const retweetedResult = result.legacy?.retweeted_status_result?.result
+  if (retweetedResult && retweetedResult.__typename === 'Tweet') {
+    const retweeter = getUserResult(result)
+    let html = ''
+    if (retweeter) {
+      const rtName = retweeter.core?.screen_name ?? retweeter.legacy?.screen_name ?? ''
+      html += `<p style="color:#666;font-size:0.9em">转推自 @${escapeXml(rtName)}</p>`
+    }
+    html += renderTweetContent(retweetedResult)
+    return html
+  }
+  return renderTweetContent(result)
+}
+
 function extractTweets(json: any): RssItem[] {
   const instructions =
     json?.data?.home?.home_timeline_urt?.instructions ?? []
@@ -142,18 +159,26 @@ function extractTweets(json: any): RssItem[] {
 
       const screenName =
         user.core?.screen_name ?? user.legacy?.screen_name ?? ''
-      const tweetId = result.rest_id ?? result.legacy.id_str
+
+      const innerResult = result.legacy?.retweeted_status_result?.result
+      const isRetweet = !!(innerResult && innerResult.__typename === 'Tweet')
+
+      const tweetId = (isRetweet ? innerResult.rest_id ?? innerResult.legacy?.id_str : result.rest_id ?? result.legacy.id_str) as string
       const timestamp = parseTimestamp(result.legacy.created_at)
-      const text = getTweetText(result)
+      const text = getTweetText(isRetweet ? innerResult : result)
 
       if (!screenName || !tweetId) continue
 
       const title = text.length > 80 ? text.slice(0, 80) + '…' : text
+      const innerUser = isRetweet ? getUserResult(innerResult) : null
+      const authorScreenName = isRetweet
+        ? (innerUser?.core?.screen_name ?? innerUser?.legacy?.screen_name ?? screenName)
+        : screenName
 
       items.push({
         title,
-        link: `https://x.com/${screenName}/status/${tweetId}`,
-        guid: `https://x.com/${screenName}/status/${tweetId}`,
+        link: `https://x.com/${authorScreenName}/status/${tweetId}`,
+        guid: `https://x.com/${authorScreenName}/status/${tweetId}`,
         pubDate: rssDate(timestamp),
         description: buildDescription(result),
       })
