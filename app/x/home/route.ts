@@ -56,7 +56,19 @@ const FEATURES = {
 
 const QUERY_ID = 'iCyHMXVutL66dZyvMtyChA'
 
+function getArticleInfo(result: any): { title: string; preview: string; coverUrl: string } | null {
+  const article = result.article?.article_results?.result
+  if (!article?.title) return null
+  return {
+    title: article.title,
+    preview: article.preview_text || '',
+    coverUrl: article.cover_media?.media_info?.original_img_url || '',
+  }
+}
+
 function getTweetText(result: any): string {
+  const article = getArticleInfo(result)
+  if (article) return article.title
   if (result.note_tweet?.note_tweet_results?.result?.text) {
     return result.note_tweet.note_tweet_results.result.text
   }
@@ -81,6 +93,34 @@ function renderTweetContent(result: any): string {
   const text = getTweetText(result)
 
   let html = ''
+
+  const article = getArticleInfo(result)
+  if (article) {
+    if (user) {
+      const avatarUrl =
+        user.avatar?.image_url ??
+        user.legacy?.profile_image_url_https ??
+        ''
+      const displayName = user.core?.name ?? user.legacy?.name ?? ''
+      const screenName =
+        user.core?.screen_name ?? user.legacy?.screen_name ?? ''
+
+      html += `<table><tr>`
+      if (avatarUrl) {
+        html += `<td valign="top"><img src="${escapeXml(avatarUrl)}" width="48" height="48" style="border-radius:50%;max-width:48px" /></td>`
+      }
+      html += `<td style="padding-left:10px"><strong>${escapeXml(displayName)}</strong><br/><span style="color:#666">@${escapeXml(screenName)}</span></td>`
+      html += `</tr></table>`
+    }
+    if (article.coverUrl) {
+      html += `<p><img src="${escapeXml(article.coverUrl)}" alt="" style="max-width:100%" /></p>`
+    }
+    html += `<p><strong>${escapeXml(article.title)}</strong></p>`
+    if (article.preview) {
+      html += `<p>${escapeXml(article.preview)}</p>`
+    }
+    return html
+  }
 
   if (user) {
     const avatarUrl =
