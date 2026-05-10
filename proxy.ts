@@ -1,29 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const config = {
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
 
-export default function proxy(req: NextRequest) {
-  if (!process.env.BASIC_AUTH_USER || !process.env.BASIC_AUTH_PWD) {
+export function proxy(req: NextRequest) {
+  const token = process.env.AUTH_TOKEN
+
+  if (!token) {
     return NextResponse.next()
   }
 
-  const basicAuth = req.headers.get('authorization')
-  const url = req.nextUrl
-
-  if (basicAuth) {
-    const authValue = basicAuth.split(' ')[1]
-    const [user, pwd] = atob(authValue).split(':')
-
-    if (
-      user === process.env.BASIC_AUTH_USER &&
-      pwd === process.env.BASIC_AUTH_PWD
-    ) {
-      return NextResponse.next()
-    }
+  if (req.nextUrl.searchParams.get('token') === token) {
+    return NextResponse.next()
   }
 
-  url.pathname = '/api/auth'
-  return NextResponse.rewrite(url)
+  return new NextResponse('Auth Required. Provide ?token=... in the URL.', {
+    status: 401,
+  })
 }
