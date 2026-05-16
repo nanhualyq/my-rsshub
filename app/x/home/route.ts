@@ -141,11 +141,17 @@ function renderTweetContent(result: any): string {
 
   html += `<p>${escapeXml(text)}</p>`
 
-  const media = result.legacy?.entities?.media
+  const media = result.legacy?.extended_entities?.media ?? result.legacy?.entities?.media
   if (media && Array.isArray(media)) {
     for (const m of media) {
       if (m.type === 'photo' && m.media_url_https) {
         html += `<br/><img src="${escapeXml(m.media_url_https)}" alt="" style="max-width:100%" />`
+      } else if ((m.type === 'video' || m.type === 'animated_gif') && m.media_url_https) {
+        const variants = m.video_info?.variants ?? []
+        const mp4s = variants.filter((v: any) => v.content_type === 'video/mp4')
+        mp4s.sort((a: any, b: any) => (b.bitrate ?? 0) - (a.bitrate ?? 0))
+        const bestMp4 = mp4s[0]?.url
+        html += `<br/><a href="${escapeXml(bestMp4 ?? m.expanded_url)}"><img src="${escapeXml(m.media_url_https)}" alt="" style="max-width:100%" /><br/><span style="font-size:0.9em;color:#666">▶ ${m.type === 'animated_gif' ? 'GIF' : 'Video'}</span></a>`
       }
     }
   }
